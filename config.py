@@ -16,10 +16,10 @@ SUPABASE_URL: str | None = os.getenv("SUPABASE_URL")
 SUPABASE_SERVICE_KEY: str | None = os.getenv("SUPABASE_SERVICE_KEY")
 
 # --- Redis (W-TinyLFU semantic cache only) ---
-REDIS_HOST: str = os.getenv("REDIS_HOST", "observant-collar-patient-38243.db.redis.io")
-REDIS_PORT: int = int(os.getenv("REDIS_PORT", "17716"))
-REDIS_USERNAME: str = os.getenv("REDIS_USERNAME", "default")
-REDIS_PASSWORD: str | None = os.getenv("REDIS_PASSWORD")
+REDIS_HOST: str = os.getenv("REDIS_HOST") or "observant-collar-patient-38243.db.redis.io"
+REDIS_PORT: int = int(os.getenv("REDIS_PORT") or "17716")
+REDIS_USERNAME: str = os.getenv("REDIS_USERNAME") or "default"
+REDIS_PASSWORD: str | None = os.getenv("REDIS_PASSWORD") or None
 
 # --- Anthropic (recommend_library rerank/synthesis) ---
 ANTHROPIC_API_KEY: str | None = os.getenv("ANTHROPIC_API_KEY")
@@ -32,6 +32,9 @@ EMBED_DIM: int = int(os.getenv("EMBED_DIM", "384"))
 # --- Cache tuning ---
 CACHE_CAPACITY: int = int(os.getenv("CACHE_CAPACITY", "1000"))
 CACHE_THETA: float = float(os.getenv("CACHE_THETA", "0.92"))
+# Threshold for the Supabase-based probability scan (different scale from CACHE_THETA
+# because library-description cosines are lower than subtask-to-subtask cosines).
+CACHE_SCAN_THETA: float = float(os.getenv("CACHE_SCAN_THETA", "0.40"))
 DOCS_TTL_SECONDS: int = int(os.getenv("DOCS_TTL_SECONDS", str(30 * 24 * 3600)))
 RECO_TTL_SECONDS: int = int(os.getenv("RECO_TTL_SECONDS", "900"))
 

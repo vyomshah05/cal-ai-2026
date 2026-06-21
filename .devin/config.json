@@ -1,15 +1,29 @@
 {
   "mcpServers": {
     "lockstep": {
-      "command": "/opt/anaconda3/envs/cs178/bin/python",
+      "command": "${env:LOCKSTEP_PYTHON}",
       "args": ["-m", "server"],
+      "cwd": "..",
       "env": {
         "REDIS_HOST": "${env:REDIS_HOST}",
         "REDIS_PORT": "${env:REDIS_PORT}",
+        "REDIS_USERNAME": "${env:REDIS_USERNAME}",
         "REDIS_PASSWORD": "${env:REDIS_PASSWORD}",
         "SUPABASE_URL": "${env:SUPABASE_URL}",
-        "SUPABASE_KEY": "${env:SUPABASE_KEY}",
-        "ANTHROPIC_API_KEY": "${env:ANTHROPIC_API_KEY}"
+        "SUPABASE_SERVICE_KEY": "${env:SUPABASE_SERVICE_KEY}",
+        "ANTHROPIC_API_KEY": "${env:ANTHROPIC_API_KEY}",
+        "RERANK_MODEL": "${env:RERANK_MODEL}",
+        "EMBED_MODEL": "${env:EMBED_MODEL}",
+        "EMBED_DIM": "${env:EMBED_DIM}",
+        "CACHE_CAPACITY": "${env:CACHE_CAPACITY}",
+        "CACHE_THETA": "${env:CACHE_THETA}",
+        "DOCS_TTL_SECONDS": "${env:DOCS_TTL_SECONDS}",
+        "RECO_TTL_SECONDS": "${env:RECO_TTL_SECONDS}",
+        "DOCS_TOP_K": "${env:DOCS_TOP_K}",
+        "LIBS_TOP_K": "${env:LIBS_TOP_K}",
+        "LOCKSTEP_HOST": "${env:LOCKSTEP_HOST}",
+        "LOCKSTEP_PORT": "${env:LOCKSTEP_PORT}",
+        "LOCKSTEP_PYTHON": "${env:LOCKSTEP_PYTHON}"
       }
     }
   }

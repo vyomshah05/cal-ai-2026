@@ -106,10 +106,10 @@ def lookup(
             pass
         return None, False
 
-    # 2. Vector near-hit
+    # 2. Vector near-hit — scoped to this library so paraphrase queries hit
     if not index_exists(config.IDX_CACHE):
         return None, True
-    candidate = _nearest_cache_entry(vec)
+    candidate = _nearest_cache_entry(vec, library_id=library_id)
     if candidate is not None and (
         candidate["cosine"] >= config.CACHE_THETA
         and candidate["library_id"] == library_id
@@ -132,12 +132,22 @@ def lookup(
     return None, True
 
 
-def _nearest_cache_entry(vec: list[float]) -> dict | None:
+def _nearest_cache_entry(vec: list[float], library_id: str | None = None) -> dict | None:
+    from redis_client import escape_tag
+
+    # Scope KNN to a specific library when provided so that semantically-similar
+    # subtask phrasings (which all map to the same library) compare against each
+    # other rather than against unrelated entries — yields much higher cosine scores.
+    if library_id:
+        knn_query = f"(@library_id:{{{escape_tag(library_id)}}}) =>[KNN 1 @embedding $vec AS score]"
+    else:
+        knn_query = "*=>[KNN 1 @embedding $vec AS score]"
+
     vec_bytes = np.asarray(vec, dtype=np.float32).tobytes()
     try:
         raw = get_client().execute_command(
             "FT.SEARCH", config.IDX_CACHE,
-            "*=>[KNN 1 @embedding $vec AS score]",
+            knn_query,
             "PARAMS", "2", "vec", vec_bytes,
             "RETURN", "4", "score", "library_id", "version", "payload",
             "SORTBY", "score",
@@ -310,6 +320,89 @@ def force_store(
     except Exception:
         return False
     return True
+
+
+def scan_relevant_libraries(
+    vec: list[float],
+    min_prob: float = 0.20,
+    query_text: str = "",
+) -> list[dict]:
+    """Score every cached library against the current task.
+
+    Scoring method:
+      base_score = cosine(task_vec, library_description_vec_from_supabase)
+                   (compares "what I'm doing" vs "what this library does")
+      keyword_boost = +0.15  if the library's short name appears verbatim in query_text
+      probability = min(1.0, base_score + keyword_boost)
+
+    Using Supabase library embeddings (not cached subtask embeddings) means
+    the score answers "is this library relevant to my task?" rather than
+    "did I phrase this task the same way as last time?" — the latter is
+    almost always low (~0.35-0.55) when two tasks touch the same library
+    from different angles (setup vs debug vs improvement).
+
+    Returns list sorted by probability descending, filtered to >= min_prob:
+        [{"library_id", "version", "probability", "base_score",
+          "keyword_boost", "payload"}, ...]
+    """
+    r = get_client()
+    query_lower = query_text.lower()
+
+    # 1. Collect unique (library_id → version) from all live cache:* keys
+    lib_map: dict[str, str] = {}
+    for k in r.scan_iter(match="cache:*", count=500):
+        try:
+            lib_id = _text(r.hget(k, "library_id") or b"")
+            version = _text(r.hget(k, "version") or b"")
+            if lib_id and lib_id not in lib_map:
+                lib_map[lib_id] = version
+        except Exception:
+            pass
+
+    if not lib_map:
+        return []
+
+    # 2. Score each cached library by comparing the task vector against the
+    #    library's own Supabase embedding ("what this library does").
+    #    One match_libraries call fetches scores for all 213 libraries at once.
+    supabase_scores: dict[str, float] = {}
+    try:
+        import supabase_client as _sc
+        for row in _sc.match_libraries(vec, k=len(lib_map) + 50):
+            if row["library_id"] in lib_map:
+                supabase_scores[row["library_id"]] = row["score"]
+    except Exception:
+        pass
+
+    # 3. Build results with keyword boost
+    results = []
+    for lib_id, version in lib_map.items():
+        base = supabase_scores.get(lib_id, 0.0)
+
+        # Keyword boost: library short name explicitly in the query text.
+        # "pandas" in "fix pandas DataFrame memory" → strong signal.
+        short = lib_id.split(":")[-1].lower()
+        boost = 0.15 if (query_lower and short and short in query_lower) else 0.0
+        probability = min(1.0, round(base + boost, 4))
+
+        if probability < min_prob:
+            continue
+
+        # Fetch the best-matching cached payload for this library
+        entry = _nearest_cache_entry(vec, library_id=lib_id)
+        payload = entry["payload"] if entry else []
+
+        results.append({
+            "library_id": lib_id,
+            "version": version,
+            "probability": probability,
+            "base_score": round(base, 4),
+            "keyword_boost": boost,
+            "payload": payload,
+        })
+
+    results.sort(key=lambda x: x["probability"], reverse=True)
+    return results
 
 
 def _cache_size() -> int:

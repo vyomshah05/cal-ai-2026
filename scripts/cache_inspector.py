@@ -114,7 +114,7 @@ def _nearest_knn(vec: list[float]) -> dict | None:
 
 def show_overview(clear: bool = False) -> None:
     if clear:
-        os.system("clear")
+        print(f"\n{'─' * 65}  {time.strftime('%H:%M:%S')}")
 
     r = get_client()
     stats = cache_mod.stats()
@@ -127,9 +127,11 @@ def show_overview(clear: bool = False) -> None:
 
     # --- Stats ---
     fill_pct = stats["size"] / max(stats["capacity"], 1) * 100
-    print(f"\n  Size       {stats['size']} / {stats['capacity']}  ({fill_pct:.1f}% full)")
-    print(f"  Theta      {stats['theta']}  (min cosine similarity to serve a hit)")
-    print(f"  Embed dim  {config.EMBED_DIM}  ({config.EMBED_MODEL})")
+    print(f"\n  Size            {stats['size']} / {stats['capacity']}  ({fill_pct:.1f}% full)")
+    print(f"  Scan threshold  {config.CACHE_SCAN_THETA}  (plan_task: Supabase-score + keyword boost must exceed this)")
+    print(f"  KNN threshold   {stats['theta']}  (lookup(): Redis cosine must exceed this)")
+    print(f"  Embed dim       {config.EMBED_DIM}  ({config.EMBED_MODEL})")
+    print(f"  Entry TTL       {config.RECO_TTL_SECONDS}s  ({config.RECO_TTL_SECONDS//3600}h {(config.RECO_TTL_SECONDS%3600)//60}m)")
 
     # --- Top-K libraries ---
     print(f"\n  TOP-K LIBRARIES  (most queried, tracked by topk:libs)")

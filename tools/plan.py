@@ -2,21 +2,23 @@
 
 Takes a raw user prompt, decomposes it into concrete subtasks via Claude,
 then for each subtask resolves the best library and relevant documentation
-by checking the Redis semantic cache first, falling back to Supabase.
+using a probability-based cache scan before falling back to Supabase.
 
 Cache flow per subtask:
   1. Embed the subtask query.
-  2. match_libraries() — in-memory cosine over ~213 rows, picks top library.
-  3. cache.lookup() — Redis KNN on idx:cache for (subtask, library, version).
-     Hit  → serve cached function chunks immediately.
-     Miss → match_functions() from Supabase fn_* table.
-  4. cache.force_store() — admits Supabase result to cache, bypassing the
-     doorkeeper one-hit-wonder gate so follow-up subtasks in this session
-     that touch the same library are served from cache. TinyLFU eviction
-     still applies (probabilistic admission is preserved).
+  2. scan_relevant_libraries() — scores every cached library against the
+     subtask vector. Returns ranked list with probability (cosine) scores.
+  3. If top cached library >= CACHE_THETA → serve it, skip Supabase entirely.
+     Otherwise → fall through to Supabase with ranked cache_candidates in output.
+  4. Supabase: match_libraries() (cosine over 213 rows) → match_functions()
+     from fn_* table. Result is force_store()d so future phases can score it.
 
-Output chains: each plan entry's (library_id, version) are valid inputs to
-get_versioned_docs for deeper follow-up without reshaping.
+Output fields per plan entry:
+  - source: "cache" | "supabase" | "none"
+  - probability: cosine of how well this library matched the subtask
+  - cache_candidates: [{library_id, probability}] — all scored cached libs
+
+Output chains: (library_id, version) are valid get_versioned_docs inputs.
 """
 from __future__ import annotations
 
@@ -105,10 +107,35 @@ def _decompose(prompt: str) -> list[str]:
 def _resolve_subtask(subtask: str, ecosystem: str | None, force_admit: bool) -> dict:
     vec = embed(subtask)
 
-    # 1. Find best-matching library (in-memory cosine over ~213 rows — fast)
+    # 1. Score every library already in the Redis cache against this subtask.
+    #    Uses Supabase library embeddings + keyword boost (see cache.scan_relevant_libraries).
+    #    min_prob=0.20 — collect anything; CACHE_SCAN_THETA filters what we actually serve.
+    cached_scored = cache_mod.scan_relevant_libraries(vec, min_prob=0.20, query_text=subtask)
+    cache_candidates = [
+        {"library_id": c["library_id"], "probability": c["probability"],
+         "base_score": c.get("base_score", 0.0), "keyword_boost": c.get("keyword_boost", 0.0)}
+        for c in cached_scored
+    ]
+
+    # 2. If the highest-scoring cached library clears the confidence threshold,
+    #    serve it directly — no Supabase call needed.
+    if cached_scored and cached_scored[0]["probability"] >= config.CACHE_SCAN_THETA:
+        top = cached_scored[0]
+        return {
+            "task": subtask,
+            "library_id": top["library_id"],
+            "version": top["version"],
+            "key_functions": top["payload"],
+            "why": "Served from cache",
+            "probability": top["probability"],
+            "cache_candidates": cache_candidates,
+            "source": "cache",
+        }
+
+    # 3. Cache insufficient — query Supabase for the best library match.
     candidates = supabase_client.match_libraries(vec, 3, ecosystem=ecosystem)
     if not candidates:
-        return _empty(subtask, "No matching library found in catalog.")
+        return _empty(subtask, "No matching library found.", cache_candidates)
 
     top = candidates[0]
     lib_id = top["library_id"]
@@ -116,19 +143,6 @@ def _resolve_subtask(subtask: str, ecosystem: str | None, force_admit: bool) -> 
     summary = top.get("summary", "")
     docs_url = top.get("docs_url", "")
 
-    # 2. Check Redis semantic cache for (subtask, library_id, version)
-    hit, admit = cache_mod.lookup(lib_id, version, subtask, vec)
-    if hit is not None:
-        return {
-            "task": subtask,
-            "library_id": lib_id,
-            "version": version,
-            "key_functions": hit["payload"],
-            "why": summary,
-            "source": "cache",
-        }
-
-    # 3. Supabase function lookup
     fn_table = top.get("function_table") or ""
     key_fns: list[dict] = []
     if fn_table:
@@ -145,10 +159,8 @@ def _resolve_subtask(subtask: str, ecosystem: str | None, force_admit: bool) -> 
             "score": top.get("score", 0.0),
         }]
 
-    # 4. Admit to cache — bypasses doorkeeper so same-session follow-ups hit cache.
-    #    If admit flag is already True (doorkeeper second sighting), use regular store.
-    #    If force_admit (session_id present) or admit, force-store regardless.
-    if admit or force_admit:
+    # 4. Admit to cache so future phases can score this library.
+    if force_admit:
         cache_mod.force_store(lib_id, version, subtask, vec, key_fns, config.RECO_TTL_SECONDS)
 
     return {
@@ -157,6 +169,8 @@ def _resolve_subtask(subtask: str, ecosystem: str | None, force_admit: bool) -> 
         "version": version,
         "key_functions": key_fns,
         "why": summary,
+        "probability": round(top.get("score", 0.0), 4),
+        "cache_candidates": cache_candidates,
         "source": "supabase",
     }
 
@@ -173,12 +187,13 @@ def _fn_chunk(row: dict, fallback_url: str) -> dict:
     }
 
 
-def _empty(subtask: str, reason: str) -> dict:
+def _empty(subtask: str, reason: str, cache_candidates: list | None = None) -> dict:
     return {
         "task": subtask,
         "library_id": None,
         "version": None,
         "key_functions": [],
         "why": reason,
+        "cache_candidates": cache_candidates or [],
         "source": "none",
     }
