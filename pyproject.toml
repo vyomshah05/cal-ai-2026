@@ -12,6 +12,7 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "packaging>=23.0",
     "numpy>=1.26.0",
+    "sentry-sdk>=2.0.0",
 ]
 
 [project.optional-dependencies]
@@ -21,7 +22,6 @@ dev = [
 obs = [
     "arize-phoenix>=5.0.0",
     "openinference-instrumentation>=0.1.0",
-    "sentry-sdk>=2.0.0",
 ]
 
 [project.scripts]

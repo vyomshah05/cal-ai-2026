@@ -24,6 +24,8 @@ from __future__ import annotations
 
 import json
 
+import sentry_sdk
+
 import config
 import cache as cache_mod
 import supabase_client
@@ -68,9 +70,22 @@ def plan_task(
 
     (library_id, version) in each plan entry are valid get_versioned_docs inputs.
     """
-    subtasks = _decompose(prompt)
-    plan = [_resolve_subtask(task, ecosystem, force_admit=session_id is not None) for task in subtasks]
-    return {"prompt": prompt, "plan": plan}
+    with sentry_sdk.start_transaction(op="mcp.tool", name="plan_task") as txn:
+        txn.set_tag("ecosystem", ecosystem or "any")
+        txn.set_tag("has_session", session_id is not None)
+
+        with sentry_sdk.start_span(op="llm.decompose", description="Claude task decomposition"):
+            subtasks = _decompose(prompt)
+
+        txn.set_data("subtask_count", len(subtasks))
+        plan = []
+        for task in subtasks:
+            with sentry_sdk.start_span(op="cache.scan", description=f"resolve subtask: {task[:60]}"):
+                entry = _resolve_subtask(task, ecosystem, force_admit=session_id is not None)
+            txn.set_data(f"subtask.source.{len(plan)}", entry.get("source", "none"))
+            plan.append(entry)
+
+        return {"prompt": prompt, "plan": plan}
 
 
 # ---------------------------------------------------------------------------
@@ -80,6 +95,12 @@ def plan_task(
 def _decompose(prompt: str) -> list[str]:
     """Ask Claude to break the prompt into 2-6 subtasks. Falls back to [prompt]."""
     try:
+        sentry_sdk.add_breadcrumb(
+            category="llm",
+            message="Calling Claude for task decomposition",
+            data={"model": config.RERANK_MODEL, "prompt_length": len(prompt)},
+            level="info",
+        )
         import anthropic
         client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
         msg = client.messages.create(
@@ -95,8 +116,12 @@ def _decompose(prompt: str) -> list[str]:
         cleaned = [s for s in subtasks if isinstance(s, str) and s.strip()]
         if cleaned:
             return cleaned[:6]
-    except Exception:
-        pass
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
+        sentry_sdk.capture_message(
+            "Claude decomposition failed — using prompt as single subtask",
+            level="warning",
+        )
     return [prompt]
 
 

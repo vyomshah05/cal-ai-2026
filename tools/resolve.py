@@ -26,6 +26,8 @@ import re
 from pathlib import Path
 from typing import Any
 
+import sentry_sdk
+
 # ---------------------------------------------------------------------------
 # npm: package-lock.json v2/v3
 # ---------------------------------------------------------------------------
@@ -300,33 +302,42 @@ def resolve_version(
         {resolved: [{library_id, requested_range, locked_version, source_file}],
          unresolved: [{name, reason, source_file}]}
     """
-    all_resolved: list[dict] = []
-    all_unresolved: list[dict] = []
+    with sentry_sdk.start_transaction(op="mcp.tool", name="resolve_version") as txn:
+        txn.set_data("manifest_count", len(manifest_files) if manifest_files else 0)
+        txn.set_tag("source", "manifest_files" if manifest_files else ("project_root" if project_root else "none"))
 
-    if manifest_files:
-        for entry in manifest_files:
-            r, u = _dispatch(entry.get("filename", ""), entry.get("content", ""))
-            all_resolved.extend(r)
-            all_unresolved.extend(u)
-    elif project_root:
-        root = Path(project_root)
-        for name in _PARSERS:
-            candidate = root / name
-            # Also check Cargo.lock with capital C
-            if not candidate.exists() and name == "cargo.lock":
-                candidate = root / "Cargo.lock"
-            if candidate.exists():
-                try:
-                    r, u = _dispatch(name, candidate.read_text(encoding="utf-8", errors="replace"))
-                    all_resolved.extend(r)
-                    all_unresolved.extend(u)
-                except OSError as e:
-                    all_unresolved.append({"name": name, "reason": str(e), "source_file": str(candidate)})
-    else:
-        all_unresolved.append({
-            "name": "(none)",
-            "reason": "provide either manifest_files or project_root",
-            "source_file": "",
-        })
+        all_resolved: list[dict] = []
+        all_unresolved: list[dict] = []
 
-    return {"resolved": all_resolved, "unresolved": all_unresolved}
+        if manifest_files:
+            for entry in manifest_files:
+                with sentry_sdk.start_span(op="parse", description=f"parse {entry.get('filename', '?')}"):
+                    r, u = _dispatch(entry.get("filename", ""), entry.get("content", ""))
+                all_resolved.extend(r)
+                all_unresolved.extend(u)
+        elif project_root:
+            root = Path(project_root)
+            for name in _PARSERS:
+                candidate = root / name
+                # Also check Cargo.lock with capital C
+                if not candidate.exists() and name == "cargo.lock":
+                    candidate = root / "Cargo.lock"
+                if candidate.exists():
+                    try:
+                        with sentry_sdk.start_span(op="parse", description=f"parse {name}"):
+                            r, u = _dispatch(name, candidate.read_text(encoding="utf-8", errors="replace"))
+                        all_resolved.extend(r)
+                        all_unresolved.extend(u)
+                    except OSError as e:
+                        sentry_sdk.capture_exception(e)
+                        all_unresolved.append({"name": name, "reason": str(e), "source_file": str(candidate)})
+        else:
+            all_unresolved.append({
+                "name": "(none)",
+                "reason": "provide either manifest_files or project_root",
+                "source_file": "",
+            })
+
+        txn.set_data("resolved_count", len(all_resolved))
+        txn.set_data("unresolved_count", len(all_unresolved))
+        return {"resolved": all_resolved, "unresolved": all_unresolved}

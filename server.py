@@ -16,11 +16,29 @@ Tool I/O contract (outputs chain into inputs):
 from __future__ import annotations
 
 import argparse
+import logging
 import os
 
+import sentry_sdk
+from sentry_sdk.integrations.logging import LoggingIntegration
 from mcp.server.fastmcp import FastMCP
 
 import config
+
+if config.SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=config.SENTRY_DSN,
+        environment=config.SENTRY_ENVIRONMENT,
+        traces_sample_rate=1.0,
+        profiles_sample_rate=1.0,
+        integrations=[
+            LoggingIntegration(
+                level=logging.WARNING,
+                event_level=logging.ERROR,
+            ),
+        ],
+        release="lockstep@0.1.0",
+    )
 
 mcp = FastMCP("lockstep", host=config.LOCKSTEP_HOST, port=config.LOCKSTEP_PORT)
 

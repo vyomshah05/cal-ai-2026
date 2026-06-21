@@ -16,6 +16,8 @@ from __future__ import annotations
 
 import json
 
+import sentry_sdk
+
 import config
 import embeddings
 import supabase_client
@@ -71,6 +73,12 @@ Return a JSON object with key "recommendations" — an array of objects, one per
 
 Return ONLY the JSON object, no prose."""
 
+    sentry_sdk.add_breadcrumb(
+        category="llm",
+        message="Calling Claude for library reranking",
+        data={"model": config.RERANK_MODEL, "candidate_count": len(candidates)},
+        level="info",
+    )
     client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
     msg = client.messages.create(
         model=config.RERANK_MODEL,
@@ -116,47 +124,62 @@ def recommend_library(
           maturity, sample_snippet}] }
         (library_id, suggested_version) are valid inputs to get_versioned_docs.
     """
-    vec = embeddings.embed(task)
-    candidates = supabase_client.match_libraries(vec, config.LIBS_TOP_K, ecosystem=ecosystem)
+    with sentry_sdk.start_transaction(op="mcp.tool", name="recommend_library") as txn:
+        txn.set_tag("ecosystem", ecosystem or "any")
 
-    if not candidates:
-        return {"recommendations": []}
+        with sentry_sdk.start_span(op="db.search", description="Supabase KNN library candidates"):
+            vec = embeddings.embed(task)
+            candidates = supabase_client.match_libraries(vec, config.LIBS_TOP_K, ecosystem=ecosystem)
 
-    # Rerank with Claude; fall back to cosine order on error
-    try:
-        ranked = _rerank_with_claude(task, candidates)
-    except Exception:
-        ranked = _fallback_rerank(candidates)
+        if not candidates:
+            return {"recommendations": []}
 
-    # Build the library_id -> candidate lookup for version / maturity
-    lib_map = {c["library_id"]: c for c in candidates}
+        txn.set_data("candidate_count", len(candidates))
 
-    notes = []
-    if constraints and constraints.get("license"):
-        notes.append("license filtering is not supported in this data source")
+        # Rerank with Claude; fall back to cosine order on error
+        try:
+            with sentry_sdk.start_span(op="llm.rerank", description="Claude library rerank"):
+                ranked = _rerank_with_claude(task, candidates)
+            txn.set_tag("rerank.source", "claude")
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
+            sentry_sdk.capture_message(
+                "Claude rerank unavailable — falling back to cosine order",
+                level="warning",
+            )
+            ranked = _fallback_rerank(candidates)
+            txn.set_tag("rerank.source", "cosine_fallback")
 
-    recommendations = []
-    for rec in ranked:
-        lid = rec.get("library_id", "")
-        lib = lib_map.get(lid, {})
-        snippet = _sample_snippet(lib)
-        recommendations.append(
-            {
-                "library_id": lid,
-                "suggested_version": lib.get("version") or "latest",
-                "why": rec.get("why", ""),
-                "tradeoffs": rec.get("tradeoffs", ""),
-                "maturity": {
-                    "stars": None,
-                    "last_release": None,
-                    "open_issues": None,
-                    "tier": lib.get("tier"),
-                },
-                "sample_snippet": snippet,
-            }
-        )
+        # Build the library_id -> candidate lookup for version / maturity
+        lib_map = {c["library_id"]: c for c in candidates}
 
-    result: dict = {"recommendations": recommendations}
-    if notes:
-        result["notes"] = notes
-    return result
+        notes = []
+        if constraints and constraints.get("license"):
+            notes.append("license filtering is not supported in this data source")
+
+        recommendations = []
+        for rec in ranked:
+            lid = rec.get("library_id", "")
+            lib = lib_map.get(lid, {})
+            snippet = _sample_snippet(lib)
+            recommendations.append(
+                {
+                    "library_id": lid,
+                    "suggested_version": lib.get("version") or "latest",
+                    "why": rec.get("why", ""),
+                    "tradeoffs": rec.get("tradeoffs", ""),
+                    "maturity": {
+                        "stars": None,
+                        "last_release": None,
+                        "open_issues": None,
+                        "tier": lib.get("tier"),
+                    },
+                    "sample_snippet": snippet,
+                }
+            )
+
+        txn.set_data("recommendation_count", len(recommendations))
+        result: dict = {"recommendations": recommendations}
+        if notes:
+            result["notes"] = notes
+        return result

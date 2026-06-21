@@ -46,6 +46,10 @@ LIBS_TOP_K: int = int(os.getenv("LIBS_TOP_K", "8"))
 LOCKSTEP_HOST: str = os.getenv("LOCKSTEP_HOST", "127.0.0.1")
 LOCKSTEP_PORT: int = int(os.getenv("LOCKSTEP_PORT", "8000"))
 
+# --- Sentry observability ---
+SENTRY_DSN: str = os.getenv("SENTRY_DSN", "")
+SENTRY_ENVIRONMENT: str = os.getenv("SENTRY_ENVIRONMENT", "development")
+
 # --- Contract-frozen Redis cache structure names (do NOT change) ---
 IDX_CACHE = "idx:cache"
 BF_DOORKEEPER = "bf:doorkeeper"

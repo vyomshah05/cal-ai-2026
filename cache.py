@@ -28,6 +28,7 @@ import time
 from typing import Any
 
 import numpy as np
+import sentry_sdk
 
 import config
 from redis_client import _cosine, _text, get_client, index_exists, ensure_cache_index
@@ -88,28 +89,42 @@ def lookup(
     try:
         r = get_client()
         r.ping()
-    except Exception:
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
         return None, False
 
     ensure_structures()
     fp = fingerprint(query, library_id, version)
 
     # 1. Doorkeeper: first sighting
-    try:
-        seen = bool(r.bf().exists(config.BF_DOORKEEPER, fp))
-    except Exception:
-        seen = True  # bloom unavailable → don't block correctness path
+    with sentry_sdk.start_span(op="cache.bloom", description="Doorkeeper fingerprint check") as span:
+        try:
+            seen = bool(r.bf().exists(config.BF_DOORKEEPER, fp))
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
+            seen = True  # bloom unavailable → don't block correctness path
+        span.set_data("seen_before", seen)
+        span.set_data("library_id", library_id)
+
     if not seen:
         try:
             r.bf().add(config.BF_DOORKEEPER, fp)
-        except Exception:
-            pass
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
         return None, False
 
     # 2. Vector near-hit — scoped to this library so paraphrase queries hit
     if not index_exists(config.IDX_CACHE):
         return None, True
-    candidate = _nearest_cache_entry(vec, library_id=library_id)
+
+    with sentry_sdk.start_span(op="cache.knn", description="Vector near-hit KNN search") as span:
+        candidate = _nearest_cache_entry(vec, library_id=library_id)
+        span.set_data("library_id", library_id)
+        span.set_data("version", version)
+        span.set_data("hit", candidate is not None and candidate["cosine"] >= config.CACHE_THETA)
+        if candidate is not None:
+            span.set_data("cosine", round(candidate["cosine"], 4))
+
     if candidate is not None and (
         candidate["cosine"] >= config.CACHE_THETA
         and candidate["library_id"] == library_id
@@ -119,8 +134,8 @@ def lookup(
             r.hincrby(candidate["key"], "hits", 1)
             r.cms().incrby(config.CMS_FREQ, [fp], [1])
             r.topk().add(config.TOPK_LIBS, library_id)
-        except Exception:
-            pass
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
         return (
             {
                 "payload": candidate["payload"],
@@ -212,7 +227,8 @@ def store(
     try:
         r = get_client()
         r.ping()
-    except Exception:
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
         return False
 
     ensure_structures()
@@ -220,8 +236,8 @@ def store(
 
     try:
         r.cms().incrby(config.CMS_FREQ, [fp], [1])
-    except Exception:
-        pass
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
 
     key = f"cache:{fp}"
 
@@ -234,8 +250,8 @@ def store(
                 return False
             try:
                 r.delete(victim)
-            except Exception:
-                pass
+            except Exception as e:
+                sentry_sdk.capture_exception(e)
 
     mapping = {
         "embedding": np.asarray(vec, dtype=np.float32).tobytes(),
@@ -251,7 +267,8 @@ def store(
         if ttl > 0:
             r.expire(key, ttl)
         r.topk().add(config.TOPK_LIBS, library_id)
-    except Exception:
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
         return False
     return True
 
@@ -276,7 +293,8 @@ def force_store(
     try:
         r = get_client()
         r.ping()
-    except Exception:
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
         return False
 
     ensure_structures()
@@ -285,8 +303,8 @@ def force_store(
     # Register with doorkeeper so future regular lookups are admit-eligible
     try:
         r.bf().add(config.BF_DOORKEEPER, fp)
-    except Exception:
-        pass
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
 
     key = f"cache:{fp}"
 
@@ -300,8 +318,8 @@ def force_store(
                 return False
             try:
                 r.delete(victim)
-            except Exception:
-                pass
+            except Exception as e:
+                sentry_sdk.capture_exception(e)
 
     mapping = {
         "embedding": np.asarray(vec, dtype=np.float32).tobytes(),
@@ -317,7 +335,8 @@ def force_store(
         if ttl > 0:
             r.expire(key, ttl)
         r.topk().add(config.TOPK_LIBS, library_id)
-    except Exception:
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
         return False
     return True
 
