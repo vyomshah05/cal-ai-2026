@@ -110,7 +110,7 @@ export function Home() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard value={`~20%`} label="less time spent planning which library and API to use, with Lockstep" accent="teal" />
+        <StatCard value={`~${planningTimeReductionPct}%`} label="less time spent planning which library and API to use, with Lockstep" accent="teal" />
         <StatCard value={`${firstPromptErrorRate.withMcp}%`} label="syntax-error rate after prompt 1, with Lockstep" accent="teal" />
         <StatCard value={`${firstPromptErrorRate.withoutMcp}%`} label="syntax-error rate after prompt 1, without Lockstep" accent="claude" />
       </div>
@@ -268,6 +268,25 @@ export function Home() {
               />
             </BarChart>
           </ResponsiveContainer>
+        </div>
+      </Card>
+
+      <Card className="p-6">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          Demo
+        </h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+          See Lockstep resolve real library docs inside an agent session.
+        </p>
+        <div className="mt-4 aspect-video overflow-hidden rounded-xl border border-black/5 dark:border-white/10">
+          <iframe
+            className="h-full w-full"
+            src="https://www.youtube.com/embed/YS1SB8UrKaA"
+            title="Lockstep demo"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            referrerPolicy="strict-origin-when-cross-origin"
+            allowFullScreen
+          />
         </div>
       </Card>
     </div>
