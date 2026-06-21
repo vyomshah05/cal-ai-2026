@@ -16,7 +16,10 @@ SUPABASE_URL: str | None = os.getenv("SUPABASE_URL")
 SUPABASE_SERVICE_KEY: str | None = os.getenv("SUPABASE_SERVICE_KEY")
 
 # --- Redis (W-TinyLFU semantic cache only) ---
-REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379")
+REDIS_HOST: str = os.getenv("REDIS_HOST", "observant-collar-patient-38243.db.redis.io")
+REDIS_PORT: int = int(os.getenv("REDIS_PORT", "17716"))
+REDIS_USERNAME: str = os.getenv("REDIS_USERNAME", "default")
+REDIS_PASSWORD: str | None = os.getenv("REDIS_PASSWORD")
 
 # --- Anthropic (recommend_library rerank/synthesis) ---
 ANTHROPIC_API_KEY: str | None = os.getenv("ANTHROPIC_API_KEY")

@@ -23,7 +23,13 @@ _TAG_SPECIAL = set(r''' :.\-/@{}[]()|<>=~!&"'$%^*+?,;''') | {"\\"}
 def get_client():
     import redis
 
-    return redis.Redis.from_url(config.REDIS_URL, decode_responses=False)
+    return redis.Redis(
+        host=config.REDIS_HOST,
+        port=config.REDIS_PORT,
+        username=config.REDIS_USERNAME,
+        password=config.REDIS_PASSWORD,
+        decode_responses=False,
+    )
 
 
 def _text(value: Any) -> str:
