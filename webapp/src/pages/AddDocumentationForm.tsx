@@ -68,7 +68,7 @@ export function AddDocumentationForm() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Add your documentation</h1>
         <p className="mt-2 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
-          Submits straight into the Supabase corpus Lockstep already serves from — same{' '}
+          Submits straight into the Supabase corpus Lockstep already serves from, same{' '}
           <code className="rounded bg-black/5 dark:bg-white/10 px-1.5 py-0.5">libraries</code> /{' '}
           <code className="rounded bg-black/5 dark:bg-white/10 px-1.5 py-0.5">fn_*</code> tables the
           scraper pipeline writes to.
@@ -140,7 +140,7 @@ export function AddDocumentationForm() {
 
           {functions.length === 0 && (
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              Optional — add the key functions you want Lockstep to be able to surface in docs lookups.
+              Optional. Add the key functions you want Lockstep to be able to surface in docs lookups.
             </p>
           )}
 

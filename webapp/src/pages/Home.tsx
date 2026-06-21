@@ -15,15 +15,15 @@ import { Card } from '../components/ui/Card';
 import { useDarkMode } from '../hooks/useDarkMode';
 import {
   avgSyntaxErrorRate,
-  promptsRatioPct,
-  promptsToComplete,
+  planningTimeReductionPct,
+  planningTimeShare,
   syntaxErrorRate,
   timePerPrompt,
 } from '../content/homeStats';
 
 const COLORS = {
-  withMcp: { light: '#14B8A6', dark: '#2DD4BF' }, // teal — "good"
-  withoutMcp: { light: '#EF4444', dark: '#F87171' }, // red — "worse"
+  withMcp: { light: '#14B8A6', dark: '#2DD4BF' }, // teal, "good"
+  withoutMcp: { light: '#EF4444', dark: '#F87171' }, // red, "worse"
 };
 
 function StatCard({
@@ -104,30 +104,32 @@ export function Home() {
           accurate, version-pinned library documentation instead of letting them guess from
           stale training data. It decomposes a coding prompt into subtasks, resolves the right
           library and version for each one, and serves real function signatures from a
-          Supabase-backed corpus through a Redis semantic cache — so generated code compiles
+          Supabase-backed corpus through a Redis semantic cache, so generated code compiles
           and runs against APIs that actually exist.
         </p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard value={`~${promptsRatioPct}%`} label="of the prompts needed to reach an equivalent result, with Lockstep" accent="teal" />
+        <StatCard value={`~${planningTimeReductionPct}%`} label="less time spent planning which library and API to use, with Lockstep" accent="teal" />
         <StatCard value={`${avgSyntaxErrorRate.withMcp}%`} label="syntax-error rate after prompt 1, with Lockstep" accent="teal" />
         <StatCard value={`${avgSyntaxErrorRate.withoutMcp}%`} label="syntax-error rate after prompt 1, without Lockstep" accent="claude" />
       </div>
 
       <Card className="p-6">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-          Prompts to reach the same result
+          Time spent planning
         </h2>
         <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-          Average number of prompts a session needs to land on an equivalent end result.
+          A regular LLM has to reason its way to the right library and version from training
+          data alone. Lockstep resolves that directly through RAG against the library corpus
+          plus a Redis semantic cache, so most of that search is skipped entirely.
         </p>
         <div className="mt-4 h-64">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={promptsToComplete} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+            <BarChart data={planningTimeShare} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
               <XAxis dataKey="label" tick={{ fill: tickColor, fontSize: 12 }} axisLine={{ stroke: gridColor }} tickLine={false} />
-              <YAxis tick={{ fill: tickColor, fontSize: 12 }} axisLine={false} tickLine={false} width={28} />
+              <YAxis tick={{ fill: tickColor, fontSize: 12 }} axisLine={false} tickLine={false} width={36} unit="%" />
               <Tooltip
                 cursor={{ fill: isDark ? '#FFFFFF0A' : '#0000000A' }}
                 content={({ active, payload }) =>
@@ -139,19 +141,19 @@ export function Home() {
                           : 'border-black/5 bg-surface-light text-slate-900'
                       }`}
                     >
-                      {payload[0].payload.label}: <strong>{payload[0].value} prompts</strong>
+                      {payload[0].payload.label}: <strong>{payload[0].value}% of session time planning</strong>
                     </div>
                   ) : null
                 }
               />
               <Bar
-                dataKey="prompts"
+                dataKey="pct"
                 radius={[8, 8, 0, 0]}
                 isAnimationActive
                 animationEasing="ease-out"
                 animationDuration={900}
               >
-                {promptsToComplete.map((entry) => (
+                {planningTimeShare.map((entry) => (
                   <Cell key={entry.label} fill={entry.label === 'With Lockstep' ? mcp : noMcp} />
                 ))}
               </Bar>
@@ -165,7 +167,7 @@ export function Home() {
           Time per prompt across a session
         </h2>
         <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-          Lockstep's decomposition step adds a little overhead on prompt 1 — but pays for itself
+          Lockstep's decomposition step adds a little overhead on prompt 1, but pays for itself
           immediately after, since every later prompt resolves docs from cache instead of
           re-discovering them.
         </p>
@@ -224,7 +226,7 @@ export function Home() {
         </h2>
         <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
           Once code starts compounding across a session, version-pinned docs keep generated
-          calls valid — without them, the agent drifts toward outdated or invented signatures.
+          calls valid. Without them, the agent drifts toward outdated or invented signatures.
         </p>
         <div className="mt-4 h-72">
           <ResponsiveContainer width="100%" height="100%">

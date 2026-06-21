@@ -2,14 +2,18 @@
 // in as an MCP server vs. the same session without it. Numbers are
 // representative of observed session shapes, not a live telemetry feed.
 
-export const promptsToComplete = [
-  { label: 'Without Lockstep', prompts: 10 },
-  { label: 'With Lockstep', prompts: 4 },
+// Share of total session time spent just planning: figuring out which
+// library, version, and API to use before any code gets written. A regular
+// LLM has to reason its way there from training data alone; Lockstep
+// resolves it directly via RAG against the library corpus plus a Redis
+// semantic cache, so the search is mostly skipped.
+export const planningTimeShare = [
+  { label: 'Without Lockstep', pct: 60 },
+  { label: 'With Lockstep', pct: 15 },
 ];
 
-// ~40% of the prompts a non-Lockstep session needs to reach the same result.
-export const promptsRatioPct = Math.round(
-  (promptsToComplete[1].prompts / promptsToComplete[0].prompts) * 100,
+export const planningTimeReductionPct = Math.round(
+  (1 - planningTimeShare[1].pct / planningTimeShare[0].pct) * 100,
 );
 
 export interface TimePoint {
@@ -18,7 +22,7 @@ export interface TimePoint {
   withoutMcp: number;
 }
 
-// +60s baseline on top of raw model latency — real prompts in a session
+// +60s baseline on top of raw model latency, since real prompts in a session
 // involve writing/reading longer code blocks, not just a bare API call.
 const MINUTE = 60;
 
@@ -43,13 +47,13 @@ export interface ErrorPoint {
 // agent slowly self-corrects toward known-safe patterns as the session goes
 // on, but never catches up to Lockstep's version-pinned accuracy.
 export const syntaxErrorRate: ErrorPoint[] = [
-  { prompt: 2, withMcp: 6, withoutMcp: 33 },
-  { prompt: 3, withMcp: 5, withoutMcp: 31 },
-  { prompt: 4, withMcp: 5, withoutMcp: 29 },
-  { prompt: 5, withMcp: 4, withoutMcp: 28 },
-  { prompt: 6, withMcp: 5, withoutMcp: 26 },
-  { prompt: 7, withMcp: 4, withoutMcp: 25 },
-  { prompt: 8, withMcp: 3, withoutMcp: 23 },
+  { prompt: 2, withMcp: 6, withoutMcp: 28 },
+  { prompt: 3, withMcp: 5, withoutMcp: 26 },
+  { prompt: 4, withMcp: 5, withoutMcp: 24 },
+  { prompt: 5, withMcp: 4, withoutMcp: 25 },
+  { prompt: 6, withMcp: 5, withoutMcp: 22 },
+  { prompt: 7, withMcp: 4, withoutMcp: 20 },
+  { prompt: 8, withMcp: 3, withoutMcp: 18 },
 ];
 
 export const avgSyntaxErrorRate = {

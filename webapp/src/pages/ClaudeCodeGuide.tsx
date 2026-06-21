@@ -27,7 +27,7 @@ export function ClaudeCodeGuide() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Use Lockstep with Claude Code</h1>
         <p className="mt-2 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
-          Lockstep runs as a local MCP server over stdio. Claude Code talks to it directly —
+          Lockstep runs as a local MCP server over stdio. Claude Code talks to it directly,
           no extra ports, no extra services beyond Supabase and Redis.
         </p>
       </div>
@@ -67,7 +67,7 @@ export function ClaudeCodeGuide() {
         </h2>
         <CodeBlock>{`claude mcp list\n# should include "lockstep"`}</CodeBlock>
         <p className="text-sm text-slate-600 dark:text-slate-400">
-          Then just ask Claude Code to use it — e.g. <em>"Use plan_task to break down: build a job
+          Then just ask Claude Code to use it, e.g. <em>"Use plan_task to break down: build a job
           queue with retries in Python."</em> The primary workflow always starts with{' '}
           <code className="rounded bg-black/5 dark:bg-white/10 px-1.5 py-0.5">plan_task</code>.
         </p>
