@@ -23,6 +23,8 @@ Output chains: (library_id, version) are valid get_versioned_docs inputs.
 from __future__ import annotations
 
 import json
+import os
+import time
 
 import sentry_sdk
 
@@ -30,6 +32,19 @@ import config
 import cache as cache_mod
 import supabase_client
 from embeddings import embed
+
+# Activity log — tail this file with plan_monitor.py to see live decisions
+_LOG_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".lockstep_activity.jsonl")
+
+
+def _log(entry: dict) -> None:
+    """Append one JSON line to the activity log. Non-blocking best-effort."""
+    try:
+        entry["ts"] = time.strftime("%H:%M:%S")
+        with open(_LOG_PATH, "a") as f:
+            f.write(json.dumps(entry) + "\n")
+    except Exception:
+        pass
 
 _DECOMPOSE_SYSTEM = (
     "You are a software planning assistant. Break the user's coding request "
@@ -77,11 +92,24 @@ def plan_task(
         with sentry_sdk.start_span(op="llm.decompose", description="Claude task decomposition"):
             subtasks = _decompose(prompt)
 
+        _log({"event": "decompose", "prompt": prompt[:120], "subtask_count": len(subtasks), "subtasks": subtasks})
+
         txn.set_data("subtask_count", len(subtasks))
         plan = []
         for task in subtasks:
             with sentry_sdk.start_span(op="cache.scan", description=f"resolve subtask: {task[:60]}"):
-                entry = _resolve_subtask(task, ecosystem, force_admit=session_id is not None)
+                entry = _resolve_subtask(task, ecosystem)
+            _log({
+                "event": "resolve",
+                "subtask": task,
+                "library_id": entry.get("library_id"),
+                "version": entry.get("version"),
+                "source": entry.get("source"),
+                "probability": entry.get("probability"),
+                "why": entry.get("why", "")[:120],
+                "key_function": (entry.get("key_functions") or [{}])[0].get("text", "")[:120],
+                "cache_candidates": entry.get("cache_candidates", [])[:5],
+            })
             txn.set_data(f"subtask.source.{len(plan)}", entry.get("source", "none"))
             plan.append(entry)
 
@@ -129,7 +157,7 @@ def _decompose(prompt: str) -> list[str]:
 # Per-subtask resolution
 # ---------------------------------------------------------------------------
 
-def _resolve_subtask(subtask: str, ecosystem: str | None, force_admit: bool) -> dict:
+def _resolve_subtask(subtask: str, ecosystem: str | None) -> dict:
     vec = embed(subtask)
 
     # 1. Score every library already in the Redis cache against this subtask.
@@ -184,9 +212,8 @@ def _resolve_subtask(subtask: str, ecosystem: str | None, force_admit: bool) -> 
             "score": top.get("score", 0.0),
         }]
 
-    # 4. Admit to cache so future phases can score this library.
-    if force_admit:
-        cache_mod.force_store(lib_id, version, subtask, vec, key_fns, config.RECO_TTL_SECONDS)
+    # 4. Admit to cache so future prompts / subtasks can be served from Redis.
+    cache_mod.force_store(lib_id, version, subtask, vec, key_fns, config.RECO_TTL_SECONDS)
 
     return {
         "task": subtask,

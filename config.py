@@ -49,6 +49,10 @@ LOCKSTEP_PORT: int = int(os.getenv("LOCKSTEP_PORT", "8000"))
 # --- Sentry observability ---
 SENTRY_DSN: str = os.getenv("SENTRY_DSN", "")
 SENTRY_ENVIRONMENT: str = os.getenv("SENTRY_ENVIRONMENT", "development")
+SENTRY_WEBHOOK_SECRET: str = os.getenv("SENTRY_WEBHOOK_SECRET", "")
+
+# --- Sentry webhook / remediation server ---
+WEBHOOK_PORT: int = int(os.getenv("WEBHOOK_PORT", "8001"))
 
 # --- Contract-frozen Redis cache structure names (do NOT change) ---
 IDX_CACHE = "idx:cache"

@@ -1,0 +1,605 @@
+{
+  "root": ".",
+  "scanned_at": "2026-06-21T01:11:50.622592",
+  "file_count": 27,
+  "total_lines": 6484,
+  "blank_lines": 1005,
+  "comment_lines": 361,
+  "code_lines": 5118,
+  "total_functions": 194,
+  "total_classes": 0,
+  "top_imports": [
+    [
+      "__future__",
+      26
+    ],
+    [
+      "tools",
+      22
+    ],
+    [
+      "config",
+      15
+    ],
+    [
+      "cache",
+      11
+    ],
+    [
+      "re",
+      11
+    ],
+    [
+      "os",
+      10
+    ],
+    [
+      "json",
+      10
+    ],
+    [
+      "redis_client",
+      10
+    ],
+    [
+      "supabase_client",
+      10
+    ],
+    [
+      "sys",
+      9
+    ]
+  ],
+  "files": [
+    {
+      "path": "librariesintodatabase/scrape.py",
+      "total": 488,
+      "blank": 62,
+      "comment": 26,
+      "code": 400,
+      "imports": [
+        "__future__",
+        "argparse",
+        "sys",
+        "threading",
+        "time",
+        "traceback",
+        "urllib",
+        "concurrent",
+        "pathlib",
+        "urllib",
+        "requests",
+        "yaml",
+        "db",
+        "extract_functions",
+        "extract_tags",
+        "dotenv",
+        "re",
+        "re",
+        "re",
+        "re",
+        "trafilatura"
+      ],
+      "functions": 16,
+      "classes": 0
+    },
+    {
+      "path": "scripts/test_harness_stock_predictor.py",
+      "total": 485,
+      "blank": 59,
+      "comment": 28,
+      "code": 398,
+      "imports": [
+        "__future__",
+        "os",
+        "sys",
+        "time",
+        "config",
+        "redis_client",
+        "tools",
+        "cache",
+        "embeddings"
+      ],
+      "functions": 7,
+      "classes": 0
+    },
+    {
+      "path": "scripts/test_harness.py",
+      "total": 485,
+      "blank": 59,
+      "comment": 28,
+      "code": 398,
+      "imports": [
+        "__future__",
+        "os",
+        "sys",
+        "time",
+        "config",
+        "redis_client",
+        "tools",
+        "cache",
+        "embeddings"
+      ],
+      "functions": 7,
+      "classes": 0
+    },
+    {
+      "path": "cache.py",
+      "total": 480,
+      "blank": 74,
+      "comment": 29,
+      "code": 377,
+      "imports": [
+        "__future__",
+        "hashlib",
+        "json",
+        "random",
+        "re",
+        "time",
+        "typing",
+        "numpy",
+        "sentry_sdk",
+        "config",
+        "redis_client",
+        "redis_client",
+        "supabase_client"
+      ],
+      "functions": 13,
+      "classes": 0
+    },
+    {
+      "path": "scripts/test_harness_devops_monitor.py",
+      "total": 461,
+      "blank": 56,
+      "comment": 19,
+      "code": 386,
+      "imports": [
+        "__future__",
+        "os",
+        "sys",
+        "time",
+        "config",
+        "redis_client",
+        "tools",
+        "cache",
+        "embeddings"
+      ],
+      "functions": 7,
+      "classes": 0
+    },
+    {
+      "path": "librariesintodatabase/extract_functions.py",
+      "total": 345,
+      "blank": 39,
+      "comment": 13,
+      "code": 293,
+      "imports": [
+        "__future__",
+        "json",
+        "os",
+        "re",
+        "shutil",
+        "subprocess",
+        "sys",
+        "tempfile",
+        "pathlib",
+        "typing"
+      ],
+      "functions": 8,
+      "classes": 0
+    },
+    {
+      "path": "tools/resolve.py",
+      "total": 343,
+      "blank": 49,
+      "comment": 28,
+      "code": 266,
+      "imports": [
+        "__future__",
+        "json",
+        "os",
+        "re",
+        "pathlib",
+        "typing",
+        "sentry_sdk"
+      ],
+      "functions": 9,
+      "classes": 0
+    },
+    {
+      "path": "librariesintodatabase/extract_tags.py",
+      "total": 333,
+      "blank": 49,
+      "comment": 23,
+      "code": 261,
+      "imports": [
+        "__future__",
+        "re",
+        "threading",
+        "collections",
+        "functools",
+        "typing",
+        "sentence_transformers",
+        "keybert",
+        "nltk",
+        "nltk",
+        "nltk",
+        "yake",
+        "numpy",
+        "nltk"
+      ],
+      "functions": 17,
+      "classes": 0
+    },
+    {
+      "path": "librariesintodatabase/db.py",
+      "total": 318,
+      "blank": 47,
+      "comment": 17,
+      "code": 254,
+      "imports": [
+        "__future__",
+        "json",
+        "os",
+        "re",
+        "time",
+        "typing",
+        "requests",
+        "psycopg2",
+        "psycopg2"
+      ],
+      "functions": 17,
+      "classes": 0
+    },
+    {
+      "path": "scripts/cache_inspector.py",
+      "total": 283,
+      "blank": 52,
+      "comment": 20,
+      "code": 211,
+      "imports": [
+        "__future__",
+        "argparse",
+        "os",
+        "sys",
+        "time",
+        "numpy",
+        "config",
+        "cache",
+        "redis_client",
+        "embeddings"
+      ],
+      "functions": 6,
+      "classes": 0
+    },
+    {
+      "path": "server.py",
+      "total": 279,
+      "blank": 45,
+      "comment": 18,
+      "code": 216,
+      "imports": [
+        "__future__",
+        "argparse",
+        "logging",
+        "os",
+        "sentry_sdk",
+        "sentry_sdk",
+        "mcp",
+        "config",
+        "tools",
+        "tools",
+        "tools",
+        "tools",
+        "cache"
+      ],
+      "functions": 6,
+      "classes": 0
+    },
+    {
+      "path": "codepulse.py",
+      "total": 235,
+      "blank": 34,
+      "comment": 15,
+      "code": 186,
+      "imports": [
+        "__future__",
+        "ast",
+        "json",
+        "re",
+        "sys",
+        "time",
+        "collections",
+        "datetime",
+        "pathlib",
+        "rich",
+        "rich",
+        "rich",
+        "rich",
+        "rich",
+        "rich",
+        "rich"
+      ],
+      "functions": 5,
+      "classes": 0
+    },
+    {
+      "path": "tools/plan.py",
+      "total": 224,
+      "blank": 34,
+      "comment": 13,
+      "code": 177,
+      "imports": [
+        "__future__",
+        "json",
+        "sentry_sdk",
+        "config",
+        "cache",
+        "supabase_client",
+        "embeddings",
+        "anthropic"
+      ],
+      "functions": 5,
+      "classes": 0
+    },
+    {
+      "path": "webhook.py",
+      "total": 208,
+      "blank": 40,
+      "comment": 14,
+      "code": 154,
+      "imports": [
+        "__future__",
+        "hashlib",
+        "hmac",
+        "json",
+        "logging",
+        "os",
+        "sys",
+        "datetime",
+        "pathlib",
+        "sentry_sdk",
+        "uvicorn",
+        "fastapi",
+        "config",
+        "tools"
+      ],
+      "functions": 4,
+      "classes": 0
+    },
+    {
+      "path": "librariesintodatabase/dbview.py",
+      "total": 201,
+      "blank": 32,
+      "comment": 11,
+      "code": 158,
+      "imports": [
+        "__future__",
+        "argparse",
+        "sys",
+        "tabulate",
+        "db",
+        "dotenv"
+      ],
+      "functions": 8,
+      "classes": 0
+    },
+    {
+      "path": "tools/recommend.py",
+      "total": 185,
+      "blank": 31,
+      "comment": 4,
+      "code": 150,
+      "imports": [
+        "__future__",
+        "json",
+        "sentry_sdk",
+        "config",
+        "embeddings",
+        "supabase_client",
+        "anthropic"
+      ],
+      "functions": 4,
+      "classes": 0
+    },
+    {
+      "path": "supabase_client.py",
+      "total": 180,
+      "blank": 32,
+      "comment": 16,
+      "code": 132,
+      "imports": [
+        "__future__",
+        "json",
+        "re",
+        "functools",
+        "typing",
+        "numpy",
+        "config",
+        "supabase"
+      ],
+      "functions": 10,
+      "classes": 0
+    },
+    {
+      "path": "tests/test_docs_supabase.py",
+      "total": 157,
+      "blank": 39,
+      "comment": 8,
+      "code": 110,
+      "imports": [
+        "__future__",
+        "pytest",
+        "supabase_client",
+        "cache",
+        "tools",
+        "tools",
+        "tools",
+        "supabase_client",
+        "tools",
+        "supabase_client",
+        "tools",
+        "cache",
+        "supabase_client",
+        "tools",
+        "supabase_client",
+        "tools"
+      ],
+      "functions": 9,
+      "classes": 0
+    },
+    {
+      "path": "tools/docs.py",
+      "total": 144,
+      "blank": 23,
+      "comment": 5,
+      "code": 116,
+      "imports": [
+        "__future__",
+        "sentry_sdk",
+        "cache",
+        "config",
+        "embeddings",
+        "supabase_client"
+      ],
+      "functions": 3,
+      "classes": 0
+    },
+    {
+      "path": "redis_client.py",
+      "total": 125,
+      "blank": 23,
+      "comment": 4,
+      "code": 98,
+      "imports": [
+        "__future__",
+        "functools",
+        "typing",
+        "numpy",
+        "config",
+        "redis",
+        "redis",
+        "redis"
+      ],
+      "functions": 7,
+      "classes": 0
+    },
+    {
+      "path": "tests/test_chaining.py",
+      "total": 111,
+      "blank": 26,
+      "comment": 1,
+      "code": 84,
+      "imports": [
+        "__future__",
+        "pytest",
+        "cache",
+        "supabase_client",
+        "tools",
+        "tools",
+        "tools",
+        "tools",
+        "tools",
+        "tools",
+        "tools"
+      ],
+      "functions": 6,
+      "classes": 0
+    },
+    {
+      "path": "tests/conftest.py",
+      "total": 104,
+      "blank": 30,
+      "comment": 2,
+      "code": 72,
+      "imports": [
+        "__future__",
+        "hashlib",
+        "numpy",
+        "pytest",
+        "config",
+        "embeddings",
+        "redis_client",
+        "redis_client",
+        "redis",
+        "redis_client"
+      ],
+      "functions": 9,
+      "classes": 0
+    },
+    {
+      "path": "tests/test_cache_invariant.py",
+      "total": 101,
+      "blank": 23,
+      "comment": 3,
+      "code": 75,
+      "imports": [
+        "__future__",
+        "json",
+        "uuid",
+        "numpy",
+        "pytest",
+        "cache",
+        "config",
+        "redis_client"
+      ],
+      "functions": 4,
+      "classes": 0
+    },
+    {
+      "path": "librariesintodatabase/verify_acceptance.py",
+      "total": 97,
+      "blank": 17,
+      "comment": 4,
+      "code": 76,
+      "imports": [
+        "__future__",
+        "librariesintodatabase",
+        "librariesintodatabase",
+        "dotenv"
+      ],
+      "functions": 2,
+      "classes": 0
+    },
+    {
+      "path": "config.py",
+      "total": 61,
+      "blank": 14,
+      "comment": 12,
+      "code": 35,
+      "imports": [
+        "__future__",
+        "os",
+        "dotenv"
+      ],
+      "functions": 0,
+      "classes": 0
+    },
+    {
+      "path": "embeddings.py",
+      "total": 51,
+      "blank": 16,
+      "comment": 0,
+      "code": 35,
+      "imports": [
+        "__future__",
+        "functools",
+        "numpy",
+        "config",
+        "sentence_transformers"
+      ],
+      "functions": 5,
+      "classes": 0
+    },
+    {
+      "path": "tools/__init__.py",
+      "total": 0,
+      "blank": 0,
+      "comment": 0,
+      "code": 0,
+      "imports": [],
+      "functions": 0,
+      "classes": 0
+    }
+  ]
+}
