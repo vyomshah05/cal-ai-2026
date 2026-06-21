@@ -40,9 +40,15 @@ async def lifespan(_app: FastAPI):
 
 app = FastAPI(title="Lockstep Webapp API", lifespan=lifespan)
 
+# WEBAPP_FRONTEND_ORIGIN lets a deployed frontend (e.g. GitHub Pages) call this
+# API without hardcoding its URL here. Comma-separated for multiple origins.
+_extra_origins = [
+    o.strip() for o in os.getenv("WEBAPP_FRONTEND_ORIGIN", "").split(",") if o.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", *_extra_origins],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -63,7 +69,8 @@ def add_library(payload: LibraryIngestRequest) -> LibraryIngestResponse:
 
 
 def main() -> None:
-    port = int(os.getenv("WEBAPP_API_PORT", "8002"))
+    # Render/Railway/etc inject PORT; fall back to WEBAPP_API_PORT for local dev.
+    port = int(os.getenv("PORT", os.getenv("WEBAPP_API_PORT", "8002")))
     uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
 
 
