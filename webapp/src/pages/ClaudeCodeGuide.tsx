@@ -36,7 +36,7 @@ export function ClaudeCodeGuide() {
         <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
           1. Clone &amp; install
         </h2>
-        <CodeBlock>{`git clone ${REPO_URL}.git\ncd cal-ai-2026\npython -m venv .venv && source .venv/bin/activate\npip install -e .\ncp .env.example .env   # fill in SUPABASE_URL, SUPABASE_SERVICE_KEY, REDIS_*, ANTHROPIC_API_KEY`}</CodeBlock>
+        <CodeBlock>{`git clone ${REPO_URL}.git\ncd lockstep\npython -m venv .venv && source .venv/bin/activate\npip install -e .\ncp .env.example .env   # fill in SUPABASE_URL, SUPABASE_SERVICE_KEY, REDIS_*, ANTHROPIC_API_KEY`}</CodeBlock>
       </Card>
 
       <Card className="p-6 space-y-4">
@@ -55,7 +55,7 @@ export function ClaudeCodeGuide() {
     "lockstep": {
       "command": "python3",
       "args": ["-m", "server"],
-      "cwd": "/absolute/path/to/cal-ai-2026"
+      "cwd": "/absolute/path/to/lockstep"
     }
   }
 }`}</CodeBlock>

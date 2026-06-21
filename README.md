@@ -1,6 +1,6 @@
 # Lockstep
 
-[Live Site]([https://vyomshah05.github.io/lockstep/)
+[Live Site](https://vyomshah05.github.io/lockstep/)
 
 Lockstep is an MCP server that hands coding agents (Claude Code, Devin, etc.)
 accurate, version-pinned library docs so they stop hallucinating APIs. It

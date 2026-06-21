@@ -6,5 +6,7 @@ export default defineConfig({
   plugins: [react()],
   // GitHub Pages serves project sites at https://<user>.github.io/<repo>/,
   // so assets must be referenced relative to that subpath in production.
-  base: process.env.GH_PAGES === 'true' ? '/cal-ai-2026/' : '/',
+  // VITE_GH_PAGES_BASE is injected by the deploy workflow from the live repo
+  // name so a future repo rename can't silently break asset paths again.
+  base: process.env.GH_PAGES === 'true' ? (process.env.VITE_GH_PAGES_BASE || '/lockstep/') : '/',
 })

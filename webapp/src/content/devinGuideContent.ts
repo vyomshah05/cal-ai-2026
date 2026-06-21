@@ -1,4 +1,4 @@
-export const REPO_URL = 'https://github.com/vyomshah05/cal-ai-2026';
+export const REPO_URL = 'https://github.com/vyomshah05/lockstep';
 
 export const devinConfigSnippet = `{
   "mcpServers": {
@@ -28,7 +28,7 @@ export const devinConfigSnippet = `{
 export const devinSetupSteps = [
   {
     title: 'Clone the repo and install',
-    body: `git clone ${REPO_URL}.git\ncd cal-ai-2026\npython -m venv .venv && source .venv/bin/activate\npip install -e .\ncp .env.example .env   # fill in Supabase, Redis, Anthropic credentials`,
+    body: `git clone ${REPO_URL}.git\ncd lockstep\npython -m venv .venv && source .venv/bin/activate\npip install -e .\ncp .env.example .env   # fill in Supabase, Redis, Anthropic credentials`,
   },
   {
     title: 'Set your Python interpreter',
