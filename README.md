@@ -1,7 +1,6 @@
 # Lockstep
 
-Repo: https://github.com/vyomshah05/cal-ai-2026
-
+[Live Site]([https://vyomshah05.github.io/lockstep/)
 Lockstep is an MCP server that hands coding agents (Claude Code, Devin, etc.)
 accurate, version-pinned library docs so they stop hallucinating APIs. It
 exposes four MCP tools — `plan_task`, `resolve_version`, `recommend_library`,
